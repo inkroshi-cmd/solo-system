@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- iOS PWA Native App Meta Tags for iPhone 15 Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SYSTEM" />
+  <meta name="theme-color" content="#030812" />
+  <title>SYSTEM // Daily Quest Interface</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Sci-Fi Fonts: Orbitron & Rajdhani -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sys-primary: #00e5ff;
+      --sys-primary-dim: rgba(0, 229, 255, 0.25);
+      --sys-primary-glow: rgba(0, 229, 255, 0.55);
+      --sys-bg-void: #030812;
+      --sys-panel-bg: rgba(7, 21, 43, 0.90);
+      --sys-panel-inner: rgba(4, 13, 28, 0.85);
+      --sys-text-main: #e6f7ff;
+      --sys-text-muted: #7aa6c2;
+      --sys-accent-gold: #ffd166;
+    }
+
+    /* Crimson Penalty / Danger Theme Override */
+    body.danger-mode {
+      --sys-primary: #ff2a4b;
+      --sys-primary-dim: rgba(255, 42, 75, 0.28);
+      --sys-primary-glow: rgba(255, 42, 75, 0.65);
+      --sys-panel-bg: rgba(32, 7, 15, 0.92);
+      --sys-panel-inner: rgba(20, 4, 9, 0.88);
+      --sys-text-main: #ffe6ea;
+      --sys-text-muted: #c27a88;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--sys-bg-void);
+      color: var(--sys-text-main);
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      min-height: 100dvh;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      transition: background-color 0.5s ease, color 0.4s ease;
+    }
+
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Ambient Background Canvas & Scanlines */
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.28) 50%
+      );
+      background-size: 100% 4px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.45;
+    }
+
+    .radial-vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 35%, transparent 35%, rgba(1, 4, 10, 0.88) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Zero-Gravity Holographic Float Animation */
+    @keyframes holoFloat {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    .holo-floating {
+      animation: holoFloat 4.8s ease-in-out infinite;
+    }
+
+    /* Holographic System Window Styling */
+    .sys-window {
+      background: var(--sys-panel-bg);
+      border: 1.5px solid var(--sys-primary);
+      box-shadow:
+        0 0 18px var(--sys-primary-dim),
+        inset 0 0 22px var(--sys-primary-dim);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+    }
+
+    /* Sharp Geometric Corner Brackets */
+    .sys-bracket::before,
+    .sys-bracket::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: var(--sys-primary);
+      border-style: solid;
+      pointer-events: none;
+      transition: border-color 0.4s ease;
+    }
+
+    .sys-bracket::before {
+      top: -2px;
+      left: -2px;
+      border-width: 3px 0 0 3px;
+    }
+
+    .sys-bracket::after {
+      bottom: -2px;
+      right: -2px;
+      border-width: 0 3px 3px 0;
+    }
+
+    .sys-card {
+      background: var(--sys-panel-inner);
+      border: 1px solid var(--sys-primary-dim);
+      transition: all 0.25s ease;
+    }
+
+    .sys-glow-text {
+      color: var(--sys-primary);
+      text-shadow: 0 0 10px var(--sys-primary-glow);
+      transition: color 0.4s ease, text-shadow 0.4s ease;
+    }
+
+    .sys-btn {
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid var(--sys-primary);
+      color: var(--sys-text-main);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    body.danger-mode .sys-btn {
+      background: rgba(255, 42, 75, 0.1);
+    }
+
+    .sys-btn:active:not(:disabled) {
+      transform: scale(0.95);
+      background: var(--sys-primary);
+      color: #030812;
+      box-shadow: 0 0 15px var(--sys-primary-glow);
+    }
+
+    .sys-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .sys-btn-primary {
+      background: var(--sys-primary);
+      color: #030812;
+      font-weight: 800;
+      box-shadow: 0 0 16px var(--sys-primary-glow);
+    }
+
+    .sys-btn-primary:active:not(:disabled) {
+      transform: scale(0.97);
+      filter: brightness(1.15);
+    }
+
+    /* Progress Bars */
+    .sys-bar-track {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--sys-primary-dim);
+      overflow: hidden;
+    }
+
+    .sys-bar-fill {
+      background: linear-gradient(90deg, var(--sys-primary-dim), var(--sys-primary));
+      box-shadow: 0 0 12px var(--sys-primary-glow);
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease;
+    }
+
+    /* Bottom Navigation Bar */
+    .nav-tab {
+      position: relative;
+      color: var(--sys-text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab.active {
+      color: var(--sys-primary);
+      text-shadow: 0 0 8px var(--sys-primary-glow);
+    }
+
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: var(--sys-primary);
+      box-shadow: 0 0 10px var(--sys-primary);
+    }
+
+    /* Modal Backdrop */
+    .sys-modal-backdrop {
+      background: rgba(2, 6, 14, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--sys-primary-dim);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between">
+
+  <!-- Background Effects -->
+  <canvas id="particle-canvas"></canvas>
+  <div class="scanlines"></div>
+  <div class="radial-vignette"></div>
+
+  <!-- Main App Shell (Responsive Mobile-First Container) -->
+  <div id="app-shell" class="relative z-10 w-full max-w-md flex flex-col min-h-[100dvh] px-3 pt-3 pb-24">
+
+    <!-- TOP HOLOGRAPHIC STATUS HEADER -->
+    <header class="sys-window sys-bracket rounded-lg p-3 mb-3">
+      <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-[var(--sys-primary)] animate-ping"></span>
+          <span class="font-orbitron text-[11px] tracking-[0.2em] sys-glow-text font-bold">SYSTEM // INTERFACE</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Sound Mute Toggle -->
+          <button id="header-sound-btn" onclick="toggleSound()" class="px-2 py-0.5 rounded border border-white/15 text-xs text-[var(--sys-text-muted)] hover:text-white" title="Toggle System Audio">
+            <span id="header-sound-icon">🔊 SFX</span>
+          </button>
+          <!-- Countdown to 12:00 AM -->
+          <div class="text-right">
+            <div class="text-[9px] tracking-widest uppercase text-[var(--sys-text-muted)] leading-none">RESET IN</div>
+            <div id="midnight-timer" class="font-orbitron text-xs font-bold tabular-nums sys-glow-text">00:00:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player Identity & Level Row -->
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-orbitron text-xl font-black tracking-wider text-white">INK</h1>
+            <span id="header-rank-badge" class="px-2 py-0.5 rounded text-[10px] font-orbitron font-bold tracking-wider border border-[var(--sys-primary)] sys-glow-text bg-black/40">
+              E-RANK
+            </span>
+          </div>
+          <div id="header-title-text" class="text-xs tracking-widest uppercase text-[var(--sys-text-muted)] font-semibold mt-0.5">
+            TITLE: <span class="text-white">E-Rank Hunter</span>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <div class="text-[10px] tracking-widest uppercase text-[var(--sys-text-muted)]">LEVEL</div>
+          <div id="header-level" class="font-orbitron text-2xl font-black tabular-nums sys-glow-text leading-none">1</div>
+          <div id="header-streak-pill" class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/50 border border-white/10 text-[10px] font-bold">
+            <span>🔥 <span id="header-streak-count">0</span>D</span>
+            <span class="text-[var(--sys-primary)]">(<span id="header-xp-mult">1.0x</span>)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini XP Progress Bar -->
+      <div class="mt-2.5">
+        <div class="flex justify-between text-[10px] font-semibold tracking-wider text-[var(--sys-text-muted)] mb-1 tabular-nums">
+          <span>EXP PROGRESS</span>
+          <span id="header-xp-text">0 / 100 XP</span>
+        </div>
+        <div class="sys-bar-track h-1.5 rounded-full w-full">
+          <div id="header-xp-bar" class="sys-bar-fill h-full rounded-full" style="width: 0%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- DANGER / PENALTY WARNING BANNER (Shown when Level < 1 or < 2h left) -->
+    <div id="danger-banner" class="hidden sys-window rounded-lg px-3 py-2 mb-3 border-[#ff2a4b] text-center">
+      <div class="font-orbitron text-xs font-bold tracking-widest text-[#ff2a4b] animate-pulse">
+        ⚠ WARNING: PENALTY ZONE ACTIVE ⚠
+      </div>
+      <div id="danger-banner-sub" class="text-[11px] text-[#ffe6ea] mt-0.5">
+        Complete the Daily Quest before 12:00 AM or suffer XP & Level loss.
+      </div>
+    </div>
+
+    <!-- MAIN FLOATING HOLOGRAPHIC CONTENT AREA -->
+    <main id="floating-container" class="flex-1 flex flex-col holo-floating">
+
+      <!-- ==================== TAB 1: DAILY QUEST ==================== -->
+      <section id="tab-quest" class="sys-window sys-bracket rounded-xl p-4 flex-1 flex flex-col justify-between">
+        <div>
+          <!-- Quest Header -->
+          <div class="text-center border-b border-white/10 pb-2.5 mb-3">
+            <div class="inline-block px-2.5 py-0.5 rounded border border-[var(--sys-primary)] text-[10px] font-orbitron tracking-[0.2em] sys-glow-text mb-1">
+              ! QUEST INFO
+            </div>
+            <h2 class="font-orbitron text-base sm:text-lg font-extrabold tracking-wider text-white uppercase">
+              DAILY QUEST: STRENGTH TRAINING
+            </h2>
+            <p class="text-xs text-[var(--sys-text-muted)] tracking-wide">
+              GOAL: PREPARATION TO BECOME STRONG
+            </p>
+          </div>
+
+          <!-- Exercise List -->
+          <div class="space-y-2.5">
+
+            <!-- 1. PUSH-UPS -->
+            <div class="sys-card rounded-lg p-2.5">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span id="check-pushups" class="w-4 h-4 rounded-sm border border-[var(--sys-primary)] flex items-center justify-center text-[10px] font-bold"></span>
+                  <span class="font-orbitron text-xs sm:text-sm font-bold tracking-wider">PUSH-UPS</span>
+                </div>
+                <span class="font-orbitron text-xs sm:text-sm font-bold tabular-nums sys-glow-text">
+                  [<span id="val-pushups">0</span> / 100]
+                </span>
+              </div>
+              <div class="sys-bar-track h-1.5 rounded-full mb-2">
+                <div id="bar-pushups" class="sys-bar-fill h-full rounded-full" style="width: 0%;"></div>
+              </div>
+              <div class="grid grid-cols-4 gap-1.5">
+                <button onclick="addRep('pushups', -5)" class="sys-btn rounded py-1 text-xs font-bold">-5</button>
+                <button onclick="addRep('pushups', 5)" class="sys-btn rounded py-1 text-xs font-bold">+5</button>
+                <button onclick="addRep('pushups', 10)" class="sys-btn rounded py-1 text-xs font-bold">+10</button>
+                <button onclick="addRep('pushups', 25)" class="sys-btn rounded py-1 text-xs font-bold">+25</button>
+              </div>
+            </div>
+
+            <!-- 2. SIT-UPS -->
+            <div class="sys-card rounded-lg p-2.5">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span id="check-situps" class="w-4 h-4 rounded-sm border border-[var(--sys-primary)] flex items-center justify-center text-[10px] font-bold"></span>
+                  <span class="font-orbitron text-xs sm:text-sm font-bold tracking-wider">SIT-UPS</span>
+                </div>
+                <span class="font-orbitron text-xs sm:text-sm font-bold tabular-nums sys-glow-text">
+                  [<span id="val-situps">0</span> / 100]
+                </span>
+              </div>
+              <div class="sys-bar-track h-1.5 rounded-full mb-2">
+                <div id="bar-situps" class="sys-bar-fill h-full rounded-full" style="width: 0%;"></div>
+              </div>
+              <div class="grid grid-cols-4 gap-1.5">
+                <button onclick="addRep('situps', -5)" class="sys-btn rounded py-1 text-xs font-bold">-5</button>
+                <button onclick="addRep('situps', 5)" class="sys-btn rounded py-1 text-xs font-bold">+5</button>
+                <button onclick="addRep('situps', 10)" class="sys-btn rounded py-1 text-xs font-bold">+10</button>
+                <button onclick="addRep('situps', 25)" class="sys-btn rounded py-1 text-xs font-bold">+25</button>
+              </div>
+            </div>
+
+            <!-- 3. SQUATS -->
+            <div class="sys-card rounded-lg p-2.5">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span id="check-squats" class="w-4 h-4 rounded-sm border border-[var(--sys-primary)] flex items-center justify-center text-[10px] font-bold"></span>
+                  <span class="font-orbitron text-xs sm:text-sm font-bold tracking-wider">SQUATS</span>
+                </div>
+                <span class="font-orbitron text-xs sm:text-sm font-bold tabular-nums sys-glow-text">
+                  [<span id="val-squats">0</span> / 100]
+                </span>
+              </div>
+              <div class="sys-bar-track h-1.5 rounded-full mb-2">
+                <div id="bar-squats" class="sys-bar-fill h-full rounded-full" style="width: 0%;"></div>
+              </div>
+              <div class="grid grid-cols-4 gap-1.5">
+                <button onclick="addRep('squats', -5)" class="sys-btn rounded py-1 text-xs font-bold">-5</button>
+                <button onclick="addRep('squats', 5)" class="sys-btn rounded py-1 text-xs font-bold">+5</button>
+                <button onclick="addRep('squats', 10)" class="sys-btn rounded py-1 text-xs font-bold">+10</button>
+                <button onclick="addRep('squats', 25)" class="sys-btn rounded py-1 text-xs font-bold">+25</button>
+              </div>
+            </div>
+
+            <!-- 4. CARDIO: JUMP ROPE (30 MIN) OR RUNNING (10 KM) -->
+            <div class="sys-card rounded-lg p-2.5">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span id="check-cardio" class="w-4 h-4 rounded-sm border border-[var(--sys-primary)] flex items-center justify-center text-[10px] font-bold"></span>
+                  <span id="cardio-label" class="font-orbitron text-xs sm:text-sm font-bold tracking-wider">JUMP ROPE</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="toggleCardioMode()" class="px-1.5 py-0.5 rounded border border-white/20 text-[10px] uppercase tracking-wider text-[var(--sys-text-muted)] hover:text-white">
+                    ⇄ SWITCH
+                  </button>
+                  <span class="font-orbitron text-xs sm:text-sm font-bold tabular-nums sys-glow-text">
+                    [<span id="val-cardio">0</span> / <span id="max-cardio">30 MIN</span>]
+                  </span>
+                </div>
+              </div>
+
+              <div class="sys-bar-track h-1.5 rounded-full mb-2">
+                <div id="bar-cardio" class="sys-bar-fill h-full rounded-full" style="width: 0%;"></div>
+              </div>
+
+              <!-- Jump Rope 10-Minute Session Timer + Quick Logs -->
+              <div id="jumprope-controls">
+                <div class="flex items-center justify-between bg-black/40 border border-white/10 rounded px-2.5 py-1.5 mb-2">
+                  <div>
+                    <div class="text-[9px] uppercase tracking-widest text-[var(--sys-text-muted)]">10-MIN SESSION TIMER</div>
+                    <div id="jr-timer-display" class="font-orbitron text-base font-bold tabular-nums sys-glow-text">10:00</div>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button id="jr-start-btn" onclick="toggleJumpRopeTimer()" class="sys-btn rounded px-2.5 py-1 text-xs font-orbitron font-bold">
+                      START
+                    </button>
+                    <button onclick="resetJumpRopeTimer()" class="sys-btn rounded px-2 py-1 text-xs font-bold" title="Reset 10m Timer">
+                      ↺
+                    </button>
+                    <button onclick="completeJumpRopeSession()" class="sys-btn rounded px-2 py-1 text-xs font-bold text-[var(--sys-primary)]" title="Log 10 Min Session">
+                      +10M
+                    </button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-1.5">
+                  <button onclick="addCardio(-5)" class="sys-btn rounded py-1 text-xs font-bold">-5 MIN</button>
+                  <button onclick="addCardio(5)" class="sys-btn rounded py-1 text-xs font-bold">+5 MIN</button>
+                  <button onclick="addCardio(10)" class="sys-btn rounded py-1 text-xs font-bold">+10 MIN</button>
+                </div>
+              </div>
+
+              <!-- Running Quick Logs (Hidden when Jump Rope is active) -->
+              <div id="running-controls" class="hidden">
+                <div class="grid grid-cols-4 gap-1.5">
+                  <button onclick="addCardio(-1)" class="sys-btn rounded py-1 text-xs font-bold">-1 KM</button>
+                  <button onclick="addCardio(1)" class="sys-btn rounded py-1 text-xs font-bold">+1 KM</button>
+                  <button onclick="addCardio(2.5)" class="sys-btn rounded py-1 text-xs font-bold">+2.5 KM</button>
+                  <button onclick="addCardio(5)" class="sys-btn rounded py-1 text-xs font-bold">+5 KM</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Quest Footer & Complete Button -->
+        <div class="mt-3 pt-2.5 border-t border-white/10">
+          <div class="flex justify-between items-center text-[11px] mb-2">
+            <span class="text-[var(--sys-text-muted)]">REWARD: <strong class="text-white">+<span id="quest-reward-preview">120</span> XP</strong> &amp; <strong class="text-white">+3 STAT PTS</strong></span>
+            <span class="text-[#ff2a4b] font-semibold">FAIL: PENALTY ZONE</span>
+          </div>
+          <button id="complete-quest-btn" onclick="completeDailyQuest()" disabled class="w-full py-2.5 rounded-lg font-orbitron text-xs sm:text-sm tracking-widest uppercase sys-btn sys-btn-primary">
+            COMPLETE ALL TASKS TO CLAIM
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: STATUS & STATS ==================== -->
+      <section id="tab-status" class="hidden sys-window sys-bracket rounded-xl p-4 flex-1 flex flex-col justify-between overflow-y-auto">
+        <div>
+          <div class="text-center border-b border-white/10 pb-2 mb-3">
+            <h2 class="font-orbitron text-base font-extrabold tracking-[0.2em] sys-glow-text">STATUS</h2>
+          </div>
+
+          <!-- Identity & Title Selector -->
+          <div class="sys-card rounded-lg p-3 mb-3">
+            <div class="grid grid-cols-2 gap-2 text-xs mb-2.5">
+              <div>
+                <span class="text-[var(--sys-text-muted)] block text-[10px]">NAME</span>
+                <span class="font-orbitron font-bold text-sm text-white">INK</span>
+              </div>
+              <div>
+                <span class="text-[var(--sys-text-muted)] block text-[10px]">HUNTER RANK</span>
+                <span id="status-rank" class="font-orbitron font-bold text-sm sys-glow-text">E-RANK</span>
+              </div>
+              <div>
+                <span class="text-[var(--sys-text-muted)] block text-[10px]">LEVEL</span>
+                <span id="status-level" class="font-orbitron font-bold text-sm text-white tabular-nums">1</span>
+              </div>
+              <div>
+                <span class="text-[var(--sys-text-muted)] block text-[10px]">FATIGUE</span>
+                <span id="status-fatigue" class="font-orbitron font-bold text-sm text-white tabular-nums">0%</span>
+              </div>
+            </div>
+
+            <!-- Active Title Dropdown -->
+            <div>
+              <label for="title-select" class="text-[10px] tracking-wider uppercase text-[var(--sys-text-muted)] block mb-1">
+                EQUIPPED TITLE (UNLOCKED BY LEVEL)
+              </label>
+              <select id="title-select" onchange="changeEquippedTitle(this.value)" class="w-full bg-black/60 border border-[var(--sys-primary)] rounded px-2.5 py-1.5 text-xs font-orbitron text-white focus:outline-none">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <!-- Aesthetic HP / MP Bars -->
+            <div class="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-white/10">
+              <div>
+                <div class="flex justify-between text-[10px] font-bold mb-0.5 tabular-nums">
+                  <span class="text-emerald-400">HP</span>
+                  <span id="status-hp">100 / 100</span>
+                </div>
+                <div class="sys-bar-track h-1.5 rounded-full">
+                  <div class="h-full bg-emerald-400 rounded-full" style="width: 100%;"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-[10px] font-bold mb-0.5 tabular-nums">
+                  <span class="text-sky-400">MP</span>
+                  <span id="status-mp">50 / 50</span>
+                </div>
+                <div class="sys-bar-track h-1.5 rounded-full">
+                  <div class="h-full bg-sky-400 rounded-full" style="width: 100%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Available Stat Points Banner -->
+          <div class="flex items-center justify-between sys-card rounded-lg px-3 py-2 mb-3 border-[var(--sys-primary)]">
+            <span class="font-orbitron text-xs font-bold tracking-wider">AVAILABLE ABILITY POINTS</span>
+            <span id="available-points" class="font-orbitron text-lg font-black sys-glow-text tabular-nums">0</span>
+          </div>
+
+          <!-- 5 Core Stats Allocation -->
+          <div class="space-y-2 mb-3">
+            <!-- STR -->
+            <div class="sys-card rounded-lg px-3 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-orbitron text-xs font-bold text-white">STR</span>
+                <span class="text-[11px] text-[var(--sys-text-muted)] ml-1.5">Strength</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span id="stat-str" class="font-orbitron text-sm font-bold tabular-nums text-white">10</span>
+                <button onclick="allocateStat('str')" class="stat-plus-btn sys-btn w-7 h-7 rounded font-orbitron font-bold text-sm flex items-center justify-center">+</button>
+              </div>
+            </div>
+            <!-- AGI -->
+            <div class="sys-card rounded-lg px-3 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-orbitron text-xs font-bold text-white">AGI</span>
+                <span class="text-[11px] text-[var(--sys-text-muted)] ml-1.5">Agility</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span id="stat-agi" class="font-orbitron text-sm font-bold tabular-nums text-white">10</span>
+                <button onclick="allocateStat('agi')" class="stat-plus-btn sys-btn w-7 h-7 rounded font-orbitron font-bold text-sm flex items-center justify-center">+</button>
+              </div>
+            </div>
+            <!-- VIT -->
+            <div class="sys-card rounded-lg px-3 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-orbitron text-xs font-bold text-white">VIT</span>
+                <span class="text-[11px] text-[var(--sys-text-muted)] ml-1.5">Vitality</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span id="stat-vit" class="font-orbitron text-sm font-bold tabular-nums text-white">10</span>
+                <button onclick="allocateStat('vit')" class="stat-plus-btn sys-btn w-7 h-7 rounded font-orbitron font-bold text-sm flex items-center justify-center">+</button>
+              </div>
+            </div>
+            <!-- INT -->
+            <div class="sys-card rounded-lg px-3 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-orbitron text-xs font-bold text-white">INT</span>
+                <span class="text-[11px] text-[var(--sys-text-muted)] ml-1.5">Intelligence</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span id="stat-int" class="font-orbitron text-sm font-bold tabular-nums text-white">10</span>
+                <button onclick="allocateStat('int')" class="stat-plus-btn sys-btn w-7 h-7 rounded font-orbitron font-bold text-sm flex items-center justify-center">+</button>
+              </div>
+            </div>
+            <!-- PER -->
+            <div class="sys-card rounded-lg px-3 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-orbitron text-xs font-bold text-white">PER</span>
+                <span class="text-[11px] text-[var(--sys-text-muted)] ml-1.5">Perception</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span id="stat-per" class="font-orbitron text-sm font-bold tabular-nums text-white">10</span>
+                <button onclick="allocateStat('per')" class="stat-plus-btn sys-btn w-7 h-7 rounded font-orbitron font-bold text-sm flex items-center justify-center">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rank & Title Progression Roadmap -->
+          <div class="sys-card rounded-lg p-2.5">
+            <div class="font-orbitron text-[10px] tracking-widest uppercase text-[var(--sys-text-muted)] mb-2">
+              AWAKENING MILESTONES (RANK &amp; TITLES)
+            </div>
+            <div id="milestone-list" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: STREAK & MULTIPLIERS ==================== -->
+      <section id="tab-streak" class="hidden sys-window sys-bracket rounded-xl p-4 flex-1 flex flex-col justify-between">
+        <div>
+          <div class="text-center border-b border-white/10 pb-2 mb-3">
+            <h2 class="font-orbitron text-base font-extrabold tracking-[0.18em] sys-glow-text">CONSISTENCY RECORD</h2>
+            <p class="text-xs text-[var(--sys-text-muted)]">CONSECUTIVE QUEST STREAKS AMPLIFY XP GAIN</p>
+          </div>
+
+          <!-- Big Streak Hero Counter -->
+          <div class="sys-card rounded-xl p-4 text-center mb-3">
+            <div class="text-[10px] font-orbitron tracking-[0.25em] text-[var(--sys-text-muted)]">ACTIVE STREAK</div>
+            <div class="font-orbitron text-4xl font-black sys-glow-text my-1 tabular-nums">
+              <span id="streak-main-count">0</span> <span class="text-lg">DAYS</span>
+            </div>
+            <div class="inline-block px-3 py-1 rounded-full border border-[var(--sys-primary)] bg-black/50 text-xs font-orbitron font-bold text-white">
+              ACTIVE XP BONUS: <span id="streak-bonus-pct" class="sys-glow-text">+0% (1.00x)</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
+              <div>
+                <div class="text-[10px] text-[var(--sys-text-muted)]">BEST STREAK</div>
+                <div class="font-orbitron font-bold text-white text-sm tabular-nums"><span id="streak-best">0</span> DAYS</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-[var(--sys-text-muted)]">TOTAL CLEARS</div>
+                <div class="font-orbitron font-bold text-white text-sm tabular-nums"><span id="streak-total">0</span> QUESTS</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Multiplier Tiers -->
+          <div class="sys-card rounded-lg p-3 mb-3">
+            <div class="font-orbitron text-[10px] tracking-widest uppercase text-[var(--sys-text-muted)] mb-2">
+              STREAK MULTIPLIER TIERS
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div id="tier-0" class="flex justify-between items-center px-2.5 py-1.5 rounded border border-white/10">
+                <span>0 – 9 Days</span>
+                <span class="font-orbitron font-bold">1.00x BASE XP</span>
+              </div>
+              <div id="tier-10" class="flex justify-between items-center px-2.5 py-1.5 rounded border border-white/10">
+                <span>10 – 19 Days</span>
+                <span class="font-orbitron font-bold">+15% XP (1.15x)</span>
+              </div>
+              <div id="tier-20" class="flex justify-between items-center px-2.5 py-1.5 rounded border border-white/10">
+                <span>20 – 29 Days</span>
+                <span class="font-orbitron font-bold">+30% XP (1.30x)</span>
+              </div>
+              <div id="tier-30" class="flex justify-between items-center px-2.5 py-1.5 rounded border border-white/10">
+                <span>30+ Days</span>
+                <span class="font-orbitron font-bold">+50% XP (1.50x MAX)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent 14-Day Log -->
+          <div class="sys-card rounded-lg p-3">
+            <div class="font-orbitron text-[10px] tracking-widest uppercase text-[var(--sys-text-muted)] mb-2">
+              RECENT 14-DAY LOG
+            </div>
+            <div id="history-grid" class="grid grid-cols-7 gap-1.5">
+              <!-- 14 cells generated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: SYSTEM SETTINGS & SIMULATION ==================== -->
+      <section id="tab-system" class="hidden sys-window sys-bracket rounded-xl p-4 flex-1 flex flex-col justify-between overflow-y-auto">
+        <div>
+          <div class="text-center border-b border-white/10 pb-2 mb-3">
+            <h2 class="font-orbitron text-base font-extrabold tracking-[0.18em] sys-glow-text">SYSTEM CONTROLS</h2>
+            <p class="text-xs text-[var(--sys-text-muted)]">DATA ARCHIVE, QUEST LOG &amp; PREFERENCES</p>
+          </div>
+
+          <div class="space-y-2.5">
+            <!-- Save Data Archive & Backup (JSON Export / Import) -->
+            <div class="sys-card rounded-lg p-3 border-[var(--sys-primary)]">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-orbitron text-xs font-bold text-white">HUNTER DATA ARCHIVE (.JSON)</div>
+                <span id="last-backup-label" class="text-[10px] font-orbitron text-[var(--sys-text-muted)]">
+                  LAST BACKUP: NEVER
+                </span>
+              </div>
+              <p class="text-[11px] text-[var(--sys-text-muted)] mb-2.5 leading-snug">
+                Download your stats, level, titles, and quest log to iPhone Files so you never lose progress if Safari clears cache.
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="exportSaveLog()" class="sys-btn sys-btn-primary rounded py-2 px-2 font-orbitron text-[11px] font-bold tracking-wider">
+                  ⬇ EXPORT LOG
+                </button>
+                <button onclick="triggerImportSaveLog()" class="sys-btn rounded py-2 px-2 font-orbitron text-[11px] font-bold tracking-wider">
+                  ⬆ IMPORT LOG
+                </button>
+              </div>
+              <input type="file" id="import-save-input" accept=".json,application/json" class="hidden" onchange="handleImportSaveFile(event)" />
+            </div>
+
+            <!-- Detailed Quest History Log -->
+            <div class="sys-card rounded-lg p-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-orbitron text-xs font-bold text-white">QUEST HISTORY LOG</div>
+                <span id="log-entry-count" class="text-[10px] font-orbitron sys-glow-text">0 RECORDS</span>
+              </div>
+              <div id="quest-log-list" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-[11px]">
+                <!-- Populated dynamically with date, status, reps/cardio, XP delta, and resulting level -->
+              </div>
+            </div>
+
+            <!-- Toggle Floating UI & Sound FX Compact Row -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="sys-card rounded-lg p-2.5 flex items-center justify-between">
+                <div>
+                  <div class="font-orbitron text-[11px] font-bold text-white">HOLO FLOAT</div>
+                  <div class="text-[10px] text-[var(--sys-text-muted)]">Idle hover</div>
+                </div>
+                <button id="toggle-float-btn" onclick="toggleFloat()" class="sys-btn rounded px-2.5 py-1 font-orbitron text-xs font-bold">
+                  ON
+                </button>
+              </div>
+
+              <div class="sys-card rounded-lg p-2.5 flex items-center justify-between">
+                <div>
+                  <div class="font-orbitron text-[11px] font-bold text-white">AUDIO FX</div>
+                  <div class="text-[10px] text-[var(--sys-text-muted)]">Synth chimes</div>
+                </div>
+                <button id="toggle-sound-btn" onclick="toggleSound()" class="sys-btn rounded px-2.5 py-1 font-orbitron text-xs font-bold">
+                  ON
+                </button>
+              </div>
+            </div>
+
+            <!-- Simulate 12:00 AM Midnight Reset -->
+            <div class="sys-card rounded-lg p-3 border-[#ff2a4b]/60">
+              <div class="font-orbitron text-xs font-bold text-[#ff2a4b] mb-1">12:00 AM MIDNIGHT SIMULATION</div>
+              <p class="text-[11px] text-[var(--sys-text-muted)] mb-2">
+                Test midnight rollover: incomplete quests reset streak, deduct XP, and push your Level into negative numbers (LV. 0, -1, -2...).
+              </p>
+              <button onclick="simulateMidnight()" class="w-full py-2 rounded font-orbitron text-xs font-bold tracking-wider border border-[#ff2a4b] text-[#ff2a4b] bg-[#ff2a4b]/10 active:bg-[#ff2a4b] active:text-white transition">
+                ⚡ SIMULATE 12:00 AM RESET
+              </button>
+            </div>
+
+            <!-- iPhone Home Screen Tip -->
+            <div class="sys-card rounded-lg p-2.5">
+              <div class="font-orbitron text-[11px] font-bold text-white mb-0.5">IPHONE 15 FULL-SCREEN APP</div>
+              <p class="text-[11px] text-[var(--sys-text-muted)] leading-snug">
+                Open your GitHub Pages link in <strong>Safari</strong>, tap <strong>Share → Add to Home Screen</strong> (with <strong>Open as Web App</strong> ON) to install.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hard Reset Data -->
+        <div class="pt-2.5 mt-2.5 border-t border-white/10">
+          <button id="reset-data-btn" onclick="handleResetConfirm()" class="w-full py-2 rounded font-orbitron text-xs tracking-wider border border-white/20 text-[var(--sys-text-muted)] hover:text-white">
+            RESET ALL PLAYER DATA
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM HOLOGRAPHIC NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 flex justify-center px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-1 bg-gradient-to-t from-[#030812] via-[#030812]/95 to-transparent">
+      <div class="sys-window rounded-xl w-full max-w-md grid grid-cols-4 overflow-hidden">
+        <button onclick="switchTab('quest')" id="nav-quest" class="nav-tab active py-2.5 flex flex-col items-center justify-center gap-0.5">
+          <span class="text-sm">⚔️</span>
+          <span class="font-orbitron text-[10px] font-bold tracking-wider">QUEST</span>
+        </button>
+        <button onclick="switchTab('status')" id="nav-status" class="nav-tab py-2.5 flex flex-col items-center justify-center gap-0.5 relative">
+          <span class="text-sm">📊</span>
+          <span class="font-orbitron text-[10px] font-bold tracking-wider">STATUS</span>
+          <span id="nav-stat-dot" class="hidden absolute top-1.5 right-5 w-2 h-2 rounded-full bg-[var(--sys-primary)] animate-ping"></span>
+        </button>
+        <button onclick="switchTab('streak')" id="nav-streak" class="nav-tab py-2.5 flex flex-col items-center justify-center gap-0.5">
+          <span class="text-sm">🔥</span>
+          <span class="font-orbitron text-[10px] font-bold tracking-wider">STREAK</span>
+        </button>
+        <button onclick="switchTab('system')" id="nav-system" class="nav-tab py-2.5 flex flex-col items-center justify-center gap-0.5">
+          <span class="text-sm">⚙️</span>
+          <span class="font-orbitron text-[10px] font-bold tracking-wider">SYSTEM</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- SYSTEM NOTIFICATION / LEVEL-UP / PENALTY MODAL -->
+  <div id="sys-modal" class="hidden fixed inset-0 z-50 sys-modal-backdrop flex items-center justify-center p-4">
+    <div class="sys-window sys-bracket rounded-xl w-full max-w-sm p-5 text-center transform transition-all">
+      <div id="modal-badge" class="inline-block px-3 py-0.5 rounded border border-[var(--sys-primary)] font-orbitron text-[10px] tracking-[0.25em] sys-glow-text mb-2">
+        SYSTEM NOTIFICATION
+      </div>
+      <h3 id="modal-title" class="font-orbitron text-xl font-black text-white tracking-wider mb-2">
+        LEVEL UP!
+      </h3>
+      <p id="modal-body" class="text-sm text-[var(--sys-text-main)] leading-relaxed mb-4 whitespace-pre-line">
+        You have leveled up!
+      </p>
+      <button onclick="closeModal()" class="w-full py-2.5 rounded-lg font-orbitron text-xs font-bold tracking-widest uppercase sys-btn sys-btn-primary">
+        CONFIRM
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. MILESTONES, RANKS & TITLES DATA
+       ========================================================================= */
+    const MILESTONES = [
+      { minLevel: -999, rank: 'FALLEN', title: 'Penalty Survivor' },
+      { minLevel: 1,    rank: 'E-RANK', title: 'E-Rank Hunter' },
+      { minLevel: 5,    rank: 'D-RANK', title: 'The Weakest Hunter' },
+      { minLevel: 10,   rank: 'C-RANK', title: 'Wolf Slayer' },
+      { minLevel: 20,   rank: 'B-RANK', title: 'Dungeon Raider' },
+      { minLevel: 35,   rank: 'A-RANK', title: 'One-Man Army' },
+      { minLevel: 50,   rank: 'S-RANK', title: 'Shadow Sovereign' },
+      { minLevel: 75,   rank: 'S-RANK+', title: 'Monarch of Shadows' },
+      { minLevel: 100,  rank: 'NATIONAL', title: 'Shadow Monarch' }
+    ];
+
+    const BASE_QUEST_XP = 120;
+    const PENALTY_XP_PER_DAY = 130;
+
+    /* =========================================================================
+       2. DEFAULT PLAYER STATE & LOCALSTORAGE PERSISTENCE
+       ========================================================================= */
+    function getLocalDateKey(dateObj = new Date()) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    const DEFAULT_STATE = {
+      level: 1,
+      xp: 0,
+      statPoints: 0,
+      stats: { str: 10, agi: 10, vit: 10, int: 10, per: 10 },
+      equippedTitle: 'E-Rank Hunter',
+      streak: 0,
+      bestStreak: 0,
+      totalCompleted: 0,
+      history: {}, // { 'YYYY-MM-DD': 'completed' | 'failed' }
+      questLog: [], // Detailed chronological log entries
+      lastBackupDate: null,
+      lastActiveDate: getLocalDateKey(),
+      daily: {
+        pushups: 0,
+        situps: 0,
+        squats: 0,
+        cardioMode: 'jumprope', // 'jumprope' (30 min) or 'running' (10 km)
+        jumpRopeMins: 0,
+        runKm: 0,
+        completed: false
+      },
+      settings: {
+        floating: true,
+        sound: true
+      }
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('solo_system_ink_v1');
+        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        const parsed = JSON.parse(raw);
+        return {
+          ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+          ...parsed,
+          stats: { ...DEFAULT_STATE.stats, ...(parsed.stats || {}) },
+          daily: { ...DEFAULT_STATE.daily, ...(parsed.daily || {}) },
+          settings: { ...DEFAULT_STATE.settings, ...(parsed.settings || {}) },
+          questLog: Array.isArray(parsed.questLog) ? parsed.questLog : []
+        };
+      } catch (e) {
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('solo_system_ink_v1', JSON.stringify(state));
+      } catch (e) {
+        console.error('Storage save failed', e);
+      }
+    }
+
+    /* =========================================================================
+       3. WEB AUDIO API SYNTHESIZED SOUND EFFECTS (ZERO EXTERNAL FILES)
+       ========================================================================= */
+    let audioCtx = null;
+
+    function playSound(type) {
+      if (!state.settings.sound) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.06);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.065);
+        } else if (type === 'complete') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.09);
+          osc.frequency.setValueAtTime(1046.5, now + 0.18);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.46);
+        } else if (type === 'levelup') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554.37, now + 0.1);
+          osc.frequency.setValueAtTime(659.25, now + 0.2);
+          osc.frequency.setValueAtTime(880, now + 0.3);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+          osc.start(now);
+          osc.stop(now + 0.66);
+        } else if (type === 'penalty') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(190, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.45);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        }
+      } catch (e) {
+        // Ignore audio errors on restricted devices
+      }
+    }
+
+    /* =========================================================================
+       4. XP, LEVELING (INCLUDING NEGATIVE LEVELS) & STREAK CALCULATIONS
+       ========================================================================= */
+    function getXpRequiredForLevel(lvl) {
+      // Scaling XP curve: Level 1->2 needs 100 XP, Level 2->3 needs 150 XP, etc.
+      const effectiveLvl = Math.max(1, lvl);
+      return 100 + (effectiveLvl - 1) * 50;
+    }
+
+    function getStreakMultiplier(streakDays) {
+      if (streakDays >= 30) return 1.50;
+      if (streakDays >= 20) return 1.30;
+      if (streakDays >= 10) return 1.15;
+      return 1.00;
+    }
+
+    function getCurrentRankInfo(level) {
+      let current = MILESTONES[1]; // Default E-Rank
+      if (level < 1) return MILESTONES[0];
+      for (const m of MILESTONES) {
+        if (level >= m.minLevel) {
+          current = m;
+        }
+      }
+      return current;
+    }
+
+    function applyXpDelta(delta) {
+      const oldLevel = state.level;
+      state.xp += delta;
+
+      // Handle Level Ups
+      while (state.xp >= getXpRequiredForLevel(state.level)) {
+        state.xp -= getXpRequiredForLevel(state.level);
+        state.level += 1;
+        // Only grant stat points when climbing into positive levels above previous peak
+        if (state.level > 1) {
+          state.statPoints += 3;
+        }
+      }
+
+      // Handle Level Downs (Including 0 and Negative Levels: -1, -2, etc.)
+      while (state.xp < 0) {
+        state.level -= 1;
+        const prevReq = getXpRequiredForLevel(state.level);
+        state.xp += prevReq;
+      }
+
+      // Auto-equip highest unlocked title if user leveled up into a new milestone
+      if (state.level > oldLevel && state.level >= 1) {
+        const rankObj = getCurrentRankInfo(state.level);
+        state.equippedTitle = rankObj.title;
+      }
+
+      return { oldLevel, newLevel: state.level };
+    }
+
+    /* =========================================================================
+       5. MIDNIGHT (12:00 AM) CHECK & PENALTY ENGINE
+       ========================================================================= */
+    function checkMidnightRollover(forceSimulatedDay = false) {
+      const todayKey = getLocalDateKey();
+      const lastKey = state.lastActiveDate;
+
+      if (!forceSimulatedDay && todayKey === lastKey) {
+        return;
+      }
+
+      // Calculate how many calendar days elapsed
+      let missedDays = 1;
+      if (!forceSimulatedDay) {
+        const d1 = new Date(lastKey + 'T00:00:00');
+        const d2 = new Date(todayKey + 'T00:00:00');
+        const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        missedDays = Math.max(1, diffDays);
+      }
+
+      let penaltyTriggered = false;
+      let totalPenaltyXp = 0;
+
+      // Evaluate the day that just ended
+      if (!state.daily.completed) {
+        penaltyTriggered = true;
+        state.history[lastKey] = 'failed';
+        state.streak = 0;
+        totalPenaltyXp += PENALTY_XP_PER_DAY;
+      }
+
+      // If more than 1 day elapsed while app was closed, apply penalty for extra missed days
+      if (missedDays > 1) {
+        penaltyTriggered = true;
+        state.streak = 0;
+        totalPenaltyXp += (missedDays - 1) * PENALTY_XP_PER_DAY;
+      }
+
+      // Reset daily quest progress for the new day
+      const prevPushups = state.daily.pushups;
+      const prevSitups = state.daily.situps;
+      const prevSquats = state.daily.squats;
+      const prevCardioSummary = state.daily.cardioMode === 'jumprope'
+        ? `${state.daily.jumpRopeMins}/30m JR`
+        : `${state.daily.runKm.toFixed(1)}/10km`;
+
+      state.daily.pushups = 0;
+      state.daily.situps = 0;
+      state.daily.squats = 0;
+      state.daily.jumpRopeMins = 0;
+      state.daily.runKm = 0;
+      state.daily.completed = false;
+      state.lastActiveDate = todayKey;
+
+      // Reset 10-min jump rope timer
+      resetJumpRopeTimer(true);
+
+      if (penaltyTriggered) {
+        const { oldLevel, newLevel } = applyXpDelta(-totalPenaltyXp);
+        recordQuestLogEntry({
+          date: lastKey,
+          status: 'PENALTY',
+          summary: `P:${prevPushups} S:${prevSitups} Q:${prevSquats} • ${prevCardioSummary}`,
+          xpDelta: -totalPenaltyXp,
+          resultingLevel: newLevel
+        });
+        saveState();
+        renderAll();
+        playSound('penalty');
+        showModal(
+          'PENALTY ZONE',
+          'DAILY QUEST FAILED',
+          `You failed to complete the Daily Quest before 12:00 AM.\n\n• Streak Reset to 0 Days\n• XP Deducted: -${totalPenaltyXp} XP\n• Level Change: LV. ${oldLevel} → LV. ${newLevel}`
+        );
+      } else {
+        saveState();
+        renderAll();
+        if (forceSimulatedDay) {
+          playSound('click');
+          showModal(
+            'NEW DAY STARTED',
+            '12:00 AM RESET COMPLETE',
+            `Yesterday's quest was cleared! Your ${state.streak}-day streak is intact.\n\nToday's Daily Quest counters have been reset to 0.`
+          );
+        }
+      }
+    }
+
+    function simulateMidnight() {
+      checkMidnightRollover(true);
+    }
+
+    function recordQuestLogEntry(entry) {
+      if (!Array.isArray(state.questLog)) {
+        state.questLog = [];
+      }
+      state.questLog.unshift({
+        id: Date.now() + Math.random(),
+        date: entry.date,
+        status: entry.status,
+        summary: entry.summary,
+        xpDelta: entry.xpDelta,
+        resultingLevel: entry.resultingLevel
+      });
+      // Keep up to 365 days of detailed records
+      if (state.questLog.length > 365) {
+        state.questLog = state.questLog.slice(0, 365);
+      }
+    }
+
+    function simulateMidnight() {
+      checkMidnightRollover(true);
+    }
+
+    /* =========================================================================
+       6. DAILY QUEST ACTIONS & 10-MIN JUMP ROPE TIMER
+       ========================================================================= */
+    function addRep(exercise, amount) {
+      if (state.daily.completed) return;
+      playSound('click');
+      state.daily[exercise] = Math.max(0, Math.min(100, state.daily[exercise] + amount));
+      saveState();
+      renderQuestTab();
+    }
+
+    function toggleCardioMode() {
+      if (state.daily.completed) return;
+      playSound('click');
+      state.daily.cardioMode = state.daily.cardioMode === 'jumprope' ? 'running' : 'jumprope';
+      saveState();
+      renderQuestTab();
+    }
+
+    function addCardio(amount) {
+      if (state.daily.completed) return;
+      playSound('click');
+      if (state.daily.cardioMode === 'jumprope') {
+        state.daily.jumpRopeMins = Math.max(0, Math.min(30, state.daily.jumpRopeMins + amount));
+      } else {
+        state.daily.runKm = Math.max(0, Math.min(10, Math.round((state.daily.runKm + amount) * 10) / 10));
+      }
+      saveState();
+      renderQuestTab();
+    }
+
+    // 10-Minute Jump Rope Session Countdown Timer
+    let jrSecondsLeft = 600; // 10 minutes
+    let jrInterval = null;
+
+    function updateJrTimerDisplay() {
+      const m = String(Math.floor(jrSecondsLeft / 60)).padStart(2, '0');
+      const s = String(jrSecondsLeft % 60).padStart(2, '0');
+      document.getElementById('jr-timer-display').textContent = `${m}:${s}`;
+    }
+
+    function toggleJumpRopeTimer() {
+      if (state.daily.completed) return;
+      playSound('click');
+      const btn = document.getElementById('jr-start-btn');
+      if (jrInterval) {
+        clearInterval(jrInterval);
+        jrInterval = null;
+        btn.textContent = 'START';
+      } else {
+        btn.textContent = 'PAUSE';
+        jrInterval = setInterval(() => {
+          jrSecondsLeft -= 1;
+          updateJrTimerDisplay();
+          if (jrSecondsLeft <= 0) {
+            clearInterval(jrInterval);
+            jrInterval = null;
+            btn.textContent = 'START';
+            jrSecondsLeft = 600;
+            updateJrTimerDisplay();
+            addCardio(10);
+            playSound('complete');
+            showModal(
+              'SESSION COMPLETE',
+              '+10 MIN JUMP ROPE LOGGED',
+              '10-minute Jump Rope session finished and automatically added to your Daily Quest!'
+            );
+          }
+        }, 1000);
+      }
+    }
+
+    function resetJumpRopeTimer(silent = false) {
+      if (!silent) playSound('click');
+      if (jrInterval) {
+        clearInterval(jrInterval);
+        jrInterval = null;
+      }
+      jrSecondsLeft = 600;
+      const btn = document.getElementById('jr-start-btn');
+      if (btn) btn.textContent = 'START';
+      updateJrTimerDisplay();
+    }
+
+    function completeJumpRopeSession() {
+      if (state.daily.completed) return;
+      resetJumpRopeTimer(true);
+      addCardio(10);
+    }
+
+    function isQuestReady() {
+      const cardioDone = state.daily.cardioMode === 'jumprope'
+        ? state.daily.jumpRopeMins >= 30
+        : state.daily.runKm >= 10;
+      return (
+        state.daily.pushups >= 100 &&
+        state.daily.situps >= 100 &&
+        state.daily.squats >= 100 &&
+        cardioDone
+      );
+    }
+
+    function completeDailyQuest() {
+      if (state.daily.completed || !isQuestReady()) return;
+
+      const todayKey = getLocalDateKey();
+      state.daily.completed = true;
+      state.streak += 1;
+      state.totalCompleted += 1;
+      if (state.streak > state.bestStreak) {
+        state.bestStreak = state.streak;
+      }
+      state.history[todayKey] = 'completed';
+
+      // Calculate XP reward with current Streak Multiplier
+      const mult = getStreakMultiplier(state.streak);
+      const earnedXp = Math.round(BASE_QUEST_XP * mult);
+      const { oldLevel, newLevel } = applyXpDelta(earnedXp);
+
+      const cardioText = state.daily.cardioMode === 'jumprope'
+        ? `${state.daily.jumpRopeMins}m Jump Rope`
+        : `${state.daily.runKm.toFixed(1)}km Run`;
+
+      recordQuestLogEntry({
+        date: todayKey,
+        status: 'COMPLETED',
+        summary: `100P / 100S / 100Q • ${cardioText}`,
+        xpDelta: earnedXp,
+        resultingLevel: newLevel
+      });
+
+      saveState();
+      renderAll();
+    }
+
+    function changeEquippedTitle(newTitle) {
+      playSound('click');
+      state.equippedTitle = newTitle;
+      saveState();
+      renderHeader();
+    }
+
+    /* =========================================================================
+       8. UI RENDERING & NAVIGATION
+       ========================================================================= */
+    function switchTab(tabName) {
+      playSound('click');
+      ['quest', 'status', 'streak', 'system'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`nav-${t}`).classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabName}`).classList.add('active');
+    }
+
+    function toggleFloat() {
+      state.settings.floating = !state.settings.floating;
+      playSound('click');
+      saveState();
+      renderSettingsTab();
+    }
+
+    function toggleSound() {
+      state.settings.sound = !state.settings.sound;
+      if (state.settings.sound) playSound('click');
+      saveState();
+      renderSettingsTab();
+    }
+
+    /* =========================================================================
+       EXPORT & IMPORT SAVE ARCHIVE (.JSON)
+       ========================================================================= */
+    function exportSaveLog() {
+      playSound('click');
+      const todayKey = getLocalDateKey();
+      state.lastBackupDate = todayKey;
+      saveState();
+      renderSettingsTab();
+
+      const backupPayload = {
+        app: 'SOLO_LEVELING_SYSTEM_INK',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        playerData: state
+      };
+
+      const jsonString = JSON.stringify(backupPayload, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ink-system-backup-${todayKey}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showModal(
+        'ARCHIVE EXPORTED',
+        'SAVE LOG DOWNLOADED',
+        `Saved "ink-system-backup-${todayKey}.json" to your device.\n\nKeep this file in your iPhone Files or iCloud Drive to restore your stats, level, and quest history anytime.`
+      );
+    }
+
+    function triggerImportSaveLog() {
+      playSound('click');
+      const input = document.getElementById('import-save-input');
+      input.value = '';
+      input.click();
+    }
+
+    function handleImportSaveFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const incoming = parsed.playerData ? parsed.playerData : parsed;
+
+          if (typeof incoming.level !== 'number' || !incoming.stats) {
+            throw new Error('Invalid System save file structure.');
+          }
+
+          state = {
+            ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+            ...incoming,
+            stats: { ...DEFAULT_STATE.stats, ...(incoming.stats || {}) },
+            daily: { ...DEFAULT_STATE.daily, ...(incoming.daily || {}) },
+            settings: { ...DEFAULT_STATE.settings, ...(incoming.settings || {}) },
+            questLog: Array.isArray(incoming.questLog) ? incoming.questLog : []
+          };
+
+          saveState();
+          renderAll();
+          playSound('levelup');
+
+          const rankInfo = getCurrentRankInfo(state.level);
+          showModal(
+            'ARCHIVE RESTORED',
+            'HUNTER DATA LOADED',
+            `Welcome back, Ink.\n\n• Level: LV. ${state.level} (${rankInfo.rank})\n• Title: ${state.equippedTitle}\n• Active Streak: ${state.streak} Days\n• Quest Records: ${state.questLog.length}`
+          );
+        } catch (err) {
+          playSound('penalty');
+          showModal(
+            'IMPORT ERROR',
+            'CORRUPTED SAVE FILE',
+            'Could not read the selected file. Please make sure you select a valid "ink-system-backup-YYYY-MM-DD.json" archive.'
+          );
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    let resetConfirmPending = false;
+    function handleResetConfirm() {
+      const btn = document.getElementById('reset-data-btn');
+      if (!resetConfirmPending) {
+        resetConfirmPending = true;
+        playSound('penalty');
+        btn.textContent = 'TAP AGAIN TO PERMANENTLY WIPE DATA';
+        btn.classList.add('border-[#ff2a4b]', 'text-[#ff2a4b]');
+        setTimeout(() => {
+          resetConfirmPending = false;
+          btn.textContent = 'RESET ALL PLAYER DATA';
+          btn.classList.remove('border-[#ff2a4b]', 'text-[#ff2a4b]');
+        }, 4000);
+      } else {
+        localStorage.removeItem('solo_system_ink_v1');
+        state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        resetConfirmPending = false;
+        btn.textContent = 'RESET ALL PLAYER DATA';
+        btn.classList.remove('border-[#ff2a4b]', 'text-[#ff2a4b]');
+        playSound('click');
+        renderAll();
+        switchTab('quest');
+      }
+    }
+
+    function showModal(badge, title, body) {
+      document.getElementById('modal-badge').textContent = badge;
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').textContent = body;
+      document.getElementById('sys-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      playSound('click');
+      document.getElementById('sys-modal').classList.add('hidden');
+    }
+
+    function renderHeader() {
+      const rankInfo = getCurrentRankInfo(state.level);
+      const reqXp = getXpRequiredForLevel(state.level);
+      const pct = Math.max(0, Math.min(100, (state.xp / reqXp) * 100));
+      const mult = getStreakMultiplier(state.streak);
+
+      document.getElementById('header-rank-badge').textContent = rankInfo.rank;
+      document.getElementById('header-title-text').innerHTML = `TITLE: <span class="text-white">${state.equippedTitle}</span>`;
+      document.getElementById('header-level').textContent = state.level;
+      document.getElementById('header-streak-count').textContent = state.streak;
+      document.getElementById('header-xp-mult').textContent = `${mult.toFixed(2)}x`;
+      document.getElementById('header-xp-text').textContent = `${state.xp} / ${reqXp} XP`;
+      document.getElementById('header-xp-bar').style.width = `${pct}%`;
+
+      // Ping indicator on Status tab when unspent stat points exist
+      const navDot = document.getElementById('nav-stat-dot');
+      if (state.statPoints > 0) {
+        navDot.classList.remove('hidden');
+      } else {
+        navDot.classList.add('hidden');
+      }
+    }
+
+    function renderQuestTab() {
+      const d = state.daily;
+
+      // Push-ups
+      document.getElementById('val-pushups').textContent = d.pushups;
+      document.getElementById('bar-pushups').style.width = `${d.pushups}%`;
+      document.getElementById('check-pushups').textContent = d.pushups >= 100 ? '✓' : '';
+
+      // Sit-ups
+      document.getElementById('val-situps').textContent = d.situps;
+      document.getElementById('bar-situps').style.width = `${d.situps}%`;
+      document.getElementById('check-situps').textContent = d.situps >= 100 ? '✓' : '';
+
+      // Squats
+      document.getElementById('val-squats').textContent = d.squats;
+      document.getElementById('bar-squats').style.width = `${d.squats}%`;
+      document.getElementById('check-squats').textContent = d.squats >= 100 ? '✓' : '';
+
+      // Cardio
+      const isJR = d.cardioMode === 'jumprope';
+      document.getElementById('cardio-label').textContent = isJR ? 'JUMP ROPE' : 'RUNNING';
+      document.getElementById('val-cardio').textContent = isJR ? d.jumpRopeMins : d.runKm.toFixed(1);
+      document.getElementById('max-cardio').textContent = isJR ? '30 MIN' : '10.0 KM';
+
+      const cardioPct = isJR ? (d.jumpRopeMins / 30) * 100 : (d.runKm / 10) * 100;
+      document.getElementById('bar-cardio').style.width = `${Math.min(100, cardioPct)}%`;
+      document.getElementById('check-cardio').textContent = cardioPct >= 100 ? '✓' : '';
+
+      document.getElementById('jumprope-controls').classList.toggle('hidden', !isJR);
+      document.getElementById('running-controls').classList.toggle('hidden', isJR);
+
+      // Reward preview (factoring in next streak day)
+      const nextMult = getStreakMultiplier(state.streak + 1);
+      document.getElementById('quest-reward-preview').textContent = Math.round(BASE_QUEST_XP * nextMult);
+
+      // Complete button state
+      const btn = document.getElementById('complete-quest-btn');
+      if (d.completed) {
+        btn.disabled = true;
+        btn.textContent = '✓ DAILY QUEST COMPLETED';
+      } else if (isQuestReady()) {
+        btn.disabled = false;
+        btn.textContent = 'CLAIM REWARD & LEVEL UP';
+      } else {
+        btn.disabled = true;
+        btn.textContent = 'COMPLETE ALL TASKS TO CLAIM';
+      }
+    }
+
+    function renderStatusTab() {
+      const rankInfo = getCurrentRankInfo(state.level);
+      document.getElementById('status-rank').textContent = rankInfo.rank;
+      document.getElementById('status-level').textContent = state.level;
+
+      // Fatigue scales down as VIT rises
+      const totalReps = state.daily.pushups + state.daily.situps + state.daily.squats;
+      const fatigue = Math.min(100, Math.max(0, Math.round((totalReps / 3) - (state.stats.vit - 10) * 1.5)));
+      document.getElementById('status-fatigue').textContent = `${fatigue}%`;
+
+      // HP & MP scale with VIT and INT
+      const maxHp = 100 + (state.stats.vit - 10) * 20;
+      const maxMp = 50 + (state.stats.int - 10) * 15;
+      document.getElementById('status-hp').textContent = `${maxHp} / ${maxHp}`;
+      document.getElementById('status-mp').textContent = `${maxMp} / ${maxMp}`;
+
+      // Stat values & allocation buttons
+      document.getElementById('available-points').textContent = state.statPoints;
+      ['str', 'agi', 'vit', 'int', 'per'].forEach(k => {
+        document.getElementById(`stat-${k}`).textContent = state.stats[k];
+      });
+
+      document.querySelectorAll('.stat-plus-btn').forEach(btn => {
+        btn.disabled = state.statPoints <= 0;
+      });
+
+      // Populate Title Selector & Milestone Roadmap
+      const select = document.getElementById('title-select');
+      const roadmap = document.getElementById('milestone-list');
+      select.innerHTML = '';
+      roadmap.innerHTML = '';
+
+      MILESTONES.filter(m => m.minLevel >= 1).forEach(m => {
+        const unlocked = state.level >= m.minLevel;
+
+        if (unlocked) {
+          const opt = document.createElement('option');
+          opt.value = m.title;
+          opt.textContent = `${m.title} (${m.rank} • Lv.${m.minLevel})`;
+          if (state.equippedTitle === m.title) opt.selected = true;
+          select.appendChild(opt);
+        }
+
+        const row = document.createElement('div');
+        row.className = `flex justify-between items-center px-2 py-1 rounded border ${
+          unlocked ? 'border-[var(--sys-primary-dim)] text-white' : 'border-white/5 text-[var(--sys-text-muted)] opacity-55'
+        }`;
+        row.innerHTML = `
+          <span><strong>LV.${m.minLevel}</strong> • ${m.rank}</span>
+          <span class="font-orbitron text-[10px]">${unlocked ? '★ ' : '🔒 '}${m.title}</span>
+        `;
+        roadmap.appendChild(row);
+      });
+
+      // If in negative level, show Penalty Survivor title
+      if (state.level < 1) {
+        const opt = document.createElement('option');
+        opt.value = 'Penalty Survivor';
+        opt.textContent = 'Penalty Survivor (FALLEN)';
+        opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function renderStreakTab() {
+      const mult = getStreakMultiplier(state.streak);
+      const bonusPct = Math.round((mult - 1) * 100);
+
+      document.getElementById('streak-main-count').textContent = state.streak;
+      document.getElementById('streak-bonus-pct').textContent = `+${bonusPct}% (${mult.toFixed(2)}x)`;
+      document.getElementById('streak-best').textContent = state.bestStreak;
+      document.getElementById('streak-total').textContent = state.totalCompleted;
+
+      // Highlight active multiplier tier
+      const activeTierId =
+        state.streak >= 30 ? 'tier-30' :
+        state.streak >= 20 ? 'tier-20' :
+        state.streak >= 10 ? 'tier-10' : 'tier-0';
+
+      ['tier-0', 'tier-10', 'tier-20', 'tier-30'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === activeTierId) {
+          el.classList.add('border-[var(--sys-primary)]', 'bg-[var(--sys-primary-dim)]', 'text-white');
+        } else {
+          el.classList.remove('border-[var(--sys-primary)]', 'bg-[var(--sys-primary-dim)]', 'text-white');
+        }
+      });
+
+      // Render 14-day history grid
+      const grid = document.getElementById('history-grid');
+      grid.innerHTML = '';
+      const today = new Date();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = getLocalDateKey(d);
+        const status = state.history[key];
+
+        const cell = document.createElement('div');
+        cell.className = 'aspect-square rounded flex flex-col items-center justify-center text-[10px] font-orbitron border ';
+        if (status === 'completed') {
+          cell.className += 'border-[var(--sys-primary)] bg-[var(--sys-primary-dim)] text-white font-bold';
+          cell.innerHTML = `<span>${d.getDate()}</span><span>✓</span>`;
+        } else if (status === 'failed') {
+          cell.className += 'border-[#ff2a4b] bg-[#ff2a4b]/20 text-[#ff2a4b] font-bold';
+          cell.innerHTML = `<span>${d.getDate()}</span><span>✕</span>`;
+        } else {
+          cell.className += 'border-white/10 bg-black/30 text-[var(--sys-text-muted)]';
+          cell.innerHTML = `<span>${d.getDate()}</span><span>·</span>`;
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderSettingsTab() {
+      const floatContainer = document.getElementById('floating-container');
+      const floatBtn = document.getElementById('toggle-float-btn');
+      if (state.settings.floating) {
+        floatContainer.classList.add('holo-floating');
+        floatBtn.textContent = 'ON';
+      } else {
+        floatContainer.classList.remove('holo-floating');
+        floatBtn.textContent = 'OFF';
+      }
+
+      const soundBtn = document.getElementById('toggle-sound-btn');
+      const headerSoundIcon = document.getElementById('header-sound-icon');
+      if (state.settings.sound) {
+        soundBtn.textContent = 'ON';
+        headerSoundIcon.textContent = '🔊 SFX';
+      } else {
+        soundBtn.textContent = 'OFF';
+        headerSoundIcon.textContent = '🔇 MUTE';
+      }
+
+      // Last backup indicator
+      const backupLabel = document.getElementById('last-backup-label');
+      if (backupLabel) {
+        backupLabel.textContent = state.lastBackupDate
+          ? `LAST BACKUP: ${state.lastBackupDate}`
+          : 'LAST BACKUP: NEVER';
+      }
+
+      // Render detailed Quest History Log
+      const logList = document.getElementById('quest-log-list');
+      const logCount = document.getElementById('log-entry-count');
+      if (logList && logCount) {
+        const logs = state.questLog || [];
+        logCount.textContent = `${logs.length} RECORD${logs.length === 1 ? '' : 'S'}`;
+        logList.innerHTML = '';
+
+        if (logs.length === 0) {
+          logList.innerHTML = `
+            <div class="text-center py-3 text-[var(--sys-text-muted)] border border-white/5 rounded">
+              No quest records yet. Complete today's Daily Quest to log your first entry.
+            </div>
+          `;
+        } else {
+          logs.forEach(item => {
+            const isWin = item.status === 'COMPLETED';
+            const xpSign = item.xpDelta >= 0 ? `+${item.xpDelta}` : `${item.xpDelta}`;
+            const row = document.createElement('div');
+            row.className = `px-2.5 py-1.5 rounded border ${
+              isWin
+                ? 'border-[var(--sys-primary-dim)] bg-[var(--sys-primary-dim)]/20'
+                : 'border-[#ff2a4b]/50 bg-[#ff2a4b]/10'
+            }`;
+            row.innerHTML = `
+              <div class="flex items-center justify-between font-orbitron text-[10px]">
+                <span class="font-bold ${isWin ? 'sys-glow-text' : 'text-[#ff2a4b]'}">
+                  ${isWin ? '✓ COMPLETED' : '✕ PENALTY'} • ${item.date}
+                </span>
+                <span class="font-bold text-white tabular-nums">
+                  ${xpSign} XP (LV.${item.resultingLevel})
+                </span>
+              </div>
+              <div class="text-[10px] text-[var(--sys-text-muted)] mt-0.5">
+                ${item.summary}
+              </div>
+            `;
+            logList.appendChild(row);
+          });
+        }
+      }
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderQuestTab();
+      renderStatusTab();
+      renderStreakTab();
+      renderSettingsTab();
+    }
+
+    /* =========================================================================
+       9. LIVE 24-HOUR COUNTDOWN TO 12:00 AM & DANGER THEME CHECK
+       ========================================================================= */
+    function updateClockAndDangerState() {
+      // Check if midnight passed while app stayed open
+      checkMidnightRollover(false);
+
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+
+      const diffMs = midnight - now;
+      const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+      const hrs = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+      const secs = String(totalSecs % 60).padStart(2, '0');
+
+      document.getElementById('midnight-timer').textContent = `${hrs}:${mins}:${secs}`;
+
+      // Danger mode triggers if Level < 1 (negative/zero level) OR < 2 hours left with incomplete quest
+      const isNegativeLevel = state.level < 1;
+      const isUrgentTime = !state.daily.completed && totalSecs < 7200; // under 2 hours
+
+      const banner = document.getElementById('danger-banner');
+      const bannerSub = document.getElementById('danger-banner-sub');
+
+      if (isNegativeLevel || isUrgentTime) {
+        document.body.classList.add('danger-mode');
+        banner.classList.remove('hidden');
+        if (isNegativeLevel) {
+          bannerSub.textContent = `PENALTY STATUS (LV. ${state.level}): Clear Daily Quests to restore positive rank.`;
+        } else {
+          bannerSub.textContent = `LESS THAN 2 HOURS REMAINING BEFORE 12:00 AM PENALTY!`;
+        }
+      } else {
+        document.body.classList.remove('danger-mode');
+        banner.classList.add('hidden');
+      }
+    }
+
+    /* =========================================================================
+       10. AMBIENT HOLOGRAPHIC PARTICLE CANVAS
+       ========================================================================= */
+    function initParticles() {
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < 38; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.8 + 0.5,
+          vy: -(Math.random() * 0.35 + 0.1),
+          vx: (Math.random() - 0.5) * 0.15,
+          alpha: Math.random() * 0.5 + 0.15
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const isDanger = document.body.classList.contains('danger-mode');
+        const colorRgb = isDanger ? '255, 42, 75' : '0, 229, 255';
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y < -5) {
+            p.y = canvas.height + 5;
+            p.x = Math.random() * canvas.width;
+          }
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${colorRgb}, ${p.alpha})`;
+          ctx.fill();
+        });
+
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    /* =========================================================================
+       11. BOOTSTRAP ON LOAD
+       ========================================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+      initParticles();
+      checkMidnightRollover(false);
+      renderAll();
+      updateClockAndDangerState();
+      setInterval(updateClockAndDangerState, 1000);
+    });
+  </script>
+</body>
+</html>
